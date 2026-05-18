@@ -36,6 +36,7 @@ type Handlers struct {
 	FatoCompras  *handler.FatoComprasHandler
 	FatoEstoque  *handler.FatoEstoqueHandler
 	FatoExecucao *handler.FatoExecucaoHandler
+	Purchase     *handler.PurchaseHandler
 }
 
 func NewRouter(h Handlers) *chi.Mux {
@@ -69,6 +70,11 @@ func NewRouter(h Handlers) *chi.Mux {
 
 		r.Route("/projetos", func(r chi.Router) {
 			r.Get("/materiais", h.Projeto.GetMateriaisByProjeto)
+		})
+
+		r.Route("/purchases", func(r chi.Router) {
+			r.Get("/", h.Purchase.GetPurchases)
+			r.Get("/metrics", h.Purchase.GetMetrics)
 		})
 	})
 
