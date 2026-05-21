@@ -35,6 +35,7 @@ func main() {
 	fatoEstoqueRepo := repository.NewPostgresFatoEstoqueRepository(db)
 	fatoExecucaoRepo := repository.NewPostgresFatoExecucaoRepository(db)
 	logImportacaoRepo := repository.NewPostgresLogImportacaoRepository(db)
+	purchaseRepo := repository.NewPostgresPurchaseRepository(db)
 
 	// Use Cases
 	projetoUC := usecase.NewProjetoUseCase(projetoRepo)
@@ -48,6 +49,7 @@ func main() {
 	fatoEstoqueUC := usecase.NewFatoEstoqueUseCase(fatoEstoqueRepo)
 	fatoExecucaoUC := usecase.NewFatoExecucaoUseCase(fatoExecucaoRepo)
 	logImportacaoUC := usecase.NewLogImportacaoUseCase(logImportacaoRepo)
+	purchaseUC := usecase.NewPurchaseUseCase(purchaseRepo)
 
 	// Handlers
 	handlers := router.Handlers{
@@ -62,6 +64,7 @@ func main() {
 		FatoEstoque:  handler.NewFatoEstoqueHandler(fatoEstoqueUC),
 		FatoExecucao: handler.NewFatoExecucaoHandler(fatoExecucaoUC),
 		LogImportacao: handler.NewLogImportacaoHandler(logImportacaoUC),
+		Purchase:     handler.NewPurchaseHandler(purchaseUC),
 	}
 
 	r := router.NewRouter(handlers)
