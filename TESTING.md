@@ -93,3 +93,5 @@ go test -v ./internal/usecase/
 ## Reference example
 
 See [`internal/usecase/project_test.go`](./internal/usecase/project_test.go) for a complete working example.
+All use cases in `internal/usecase/` are fully tested following this standard.
+
