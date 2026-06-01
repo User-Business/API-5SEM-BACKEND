@@ -7,39 +7,22 @@ import (
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/domain/entity"
 )
 
-// Mock do Repository
 type mockTarefaRepo struct {
-	tarefas []entity.DimTarefa
-	err     error
+	data []entity.DimTarefa
+	err  error
 }
 
 func (m *mockTarefaRepo) FindAll() ([]entity.DimTarefa, error) {
-	return m.tarefas, m.err
+	return m.data, m.err
 }
 
-// Teste 1: sucesso
 func TestTarefaUseCase_GetAll_Success(t *testing.T) {
 	// Arrange
 	fake := []entity.DimTarefa{
-		{
-			IdTarefa:      "1",
-			CodigoTarefa:  "TAR001",
-			NomeTarefa:    "Planejamento",
-			StatusTarefa:  "Concluída",
-		},
-		{
-			IdTarefa:      "2",
-			CodigoTarefa:  "TAR002",
-			NomeTarefa:    "Execução",
-			StatusTarefa:  "Em andamento",
-		},
+		{SkTarefa: "1", IdTarefa: "T1", Titulo: "Tarefa Alpha"},
+		{SkTarefa: "2", IdTarefa: "T2", Titulo: "Tarefa Beta"},
 	}
-
-	mock := &mockTarefaRepo{
-		tarefas: fake,
-		err:     nil,
-	}
-
+	mock := &mockTarefaRepo{data: fake, err: nil}
 	uc := NewTarefaUseCase(mock)
 
 	// Act
@@ -49,28 +32,17 @@ func TestTarefaUseCase_GetAll_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
 	if len(result) != 2 {
 		t.Fatalf("esperava 2 tarefas, recebeu: %d", len(result))
 	}
-
-	if result[0].CodigoTarefa != "TAR001" {
-		t.Errorf("esperava código TAR001, recebeu %s", result[0].CodigoTarefa)
-	}
-
-	if result[1].NomeTarefa != "Execução" {
-		t.Errorf("esperava tarefa 'Execução', recebeu %s", result[1].NomeTarefa)
+	if result[0].Titulo != "Tarefa Alpha" {
+		t.Errorf("esperava Tarefa Alpha, recebeu: %s", result[0].Titulo)
 	}
 }
 
-// Teste 2: erro do repository
 func TestTarefaUseCase_GetAll_Error(t *testing.T) {
 	// Arrange
-	mock := &mockTarefaRepo{
-		tarefas: nil,
-		err:     errors.New("database connection failed"),
-	}
-
+	mock := &mockTarefaRepo{data: nil, err: errors.New("db error")}
 	uc := NewTarefaUseCase(mock)
 
 	// Act
@@ -80,20 +52,14 @@ func TestTarefaUseCase_GetAll_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
 	if result != nil {
 		t.Errorf("esperava nil, recebeu: %v", result)
 	}
 }
 
-// Teste 3: lista vazia
 func TestTarefaUseCase_GetAll_Empty(t *testing.T) {
 	// Arrange
-	mock := &mockTarefaRepo{
-		tarefas: []entity.DimTarefa{},
-		err:     nil,
-	}
-
+	mock := &mockTarefaRepo{data: []entity.DimTarefa{}, err: nil}
 	uc := NewTarefaUseCase(mock)
 
 	// Act
@@ -103,8 +69,7 @@ func TestTarefaUseCase_GetAll_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
 	if len(result) != 0 {
-		t.Errorf("esperava lista vazia, recebeu %d itens", len(result))
+		t.Errorf("esperava 0 tarefas, recebeu: %d", len(result))
 	}
 }

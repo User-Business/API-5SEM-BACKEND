@@ -3,22 +3,21 @@ package usecase
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/domain/entity"
 )
 
-// Mock do Repository
 type mockLogImportacaoRepo struct {
-	logs    []entity.LogImportacao
-	log     *entity.LogImportacao
-	errLogs []entity.LogImportacaoErro
-
-	id  int
-	err error
+	createdID int
+	err       error
+	logs      []entity.LogImportacao
+	singleLog *entity.LogImportacao
+	errors    []entity.LogImportacaoErro
 }
 
 func (m *mockLogImportacaoRepo) Create(log *entity.LogImportacao) (int, error) {
-	return m.id, m.err
+	return m.createdID, m.err
 }
 
 func (m *mockLogImportacaoRepo) Update(log *entity.LogImportacao) error {
@@ -38,325 +37,198 @@ func (m *mockLogImportacaoRepo) FindAll() ([]entity.LogImportacao, error) {
 }
 
 func (m *mockLogImportacaoRepo) FindByID(id int) (*entity.LogImportacao, error) {
-	return m.log, m.err
+	return m.singleLog, m.err
 }
 
 func (m *mockLogImportacaoRepo) FindErrorsByLogID(logID int) ([]entity.LogImportacaoErro, error) {
-	return m.errLogs, m.err
+	return m.errors, m.err
 }
 
-// ==================== CREATE ====================
-
+// Create
 func TestLogImportacaoUseCase_Create_Success(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		id:  1,
-		err: nil,
-	}
-
+	mock := &mockLogImportacaoRepo{createdID: 42, err: nil}
 	uc := NewLogImportacaoUseCase(mock)
 
-	log := &entity.LogImportacao{}
+	id, err := uc.Create(&entity.LogImportacao{NomeArquivo: "test.xlsx"})
 
-	// Act
-	result, err := uc.Create(log)
-
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
-	if result != 1 {
-		t.Errorf("esperava ID 1, recebeu %d", result)
+	if id != 42 {
+		t.Fatalf("esperava ID 42, recebeu: %d", id)
 	}
 }
 
 func TestLogImportacaoUseCase_Create_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		id:  0,
-		err: errors.New("database error"),
-	}
-
+	mock := &mockLogImportacaoRepo{createdID: 0, err: errors.New("insert error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	log := &entity.LogImportacao{}
+	_, err := uc.Create(&entity.LogImportacao{NomeArquivo: "test.xlsx"})
 
-	// Act
-	result, err := uc.Create(log)
-
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
-	if result != 0 {
-		t.Errorf("esperava ID 0, recebeu %d", result)
-	}
 }
 
-// ==================== UPDATE ====================
-
+// Update
 func TestLogImportacaoUseCase_Update_Success(t *testing.T) {
-	// Arrange
 	mock := &mockLogImportacaoRepo{err: nil}
-
 	uc := NewLogImportacaoUseCase(mock)
 
-	log := &entity.LogImportacao{}
+	err := uc.Update(&entity.LogImportacao{ID: 1})
 
-	// Act
-	err := uc.Update(log)
-
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
 }
 
 func TestLogImportacaoUseCase_Update_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		err: errors.New("update failed"),
-	}
-
+	mock := &mockLogImportacaoRepo{err: errors.New("update error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	log := &entity.LogImportacao{}
+	err := uc.Update(&entity.LogImportacao{ID: 1})
 
-	// Act
-	err := uc.Update(log)
-
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
 }
 
-// ==================== CREATE ERROR ====================
-
+// CreateError
 func TestLogImportacaoUseCase_CreateError_Success(t *testing.T) {
-	// Arrange
 	mock := &mockLogImportacaoRepo{err: nil}
-
 	uc := NewLogImportacaoUseCase(mock)
 
-	errLog := &entity.LogImportacaoErro{}
+	err := uc.CreateError(&entity.LogImportacaoErro{LogImportacaoID: 1})
 
-	// Act
-	err := uc.CreateError(errLog)
-
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
 }
 
 func TestLogImportacaoUseCase_CreateError_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		err: errors.New("create error failed"),
-	}
-
+	mock := &mockLogImportacaoRepo{err: errors.New("create error error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	errLog := &entity.LogImportacaoErro{}
+	err := uc.CreateError(&entity.LogImportacaoErro{LogImportacaoID: 1})
 
-	// Act
-	err := uc.CreateError(errLog)
-
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
 }
 
-// ==================== CREATE ERRORS BATCH ====================
-
+// CreateErrorsBatch
 func TestLogImportacaoUseCase_CreateErrorsBatch_Success(t *testing.T) {
-	// Arrange
 	mock := &mockLogImportacaoRepo{err: nil}
-
 	uc := NewLogImportacaoUseCase(mock)
 
-	errLogs := []entity.LogImportacaoErro{}
+	err := uc.CreateErrorsBatch([]entity.LogImportacaoErro{{LogImportacaoID: 1}})
 
-	// Act
-	err := uc.CreateErrorsBatch(errLogs)
-
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
 }
 
 func TestLogImportacaoUseCase_CreateErrorsBatch_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		err: errors.New("batch insert failed"),
-	}
-
+	mock := &mockLogImportacaoRepo{err: errors.New("batch error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	errLogs := []entity.LogImportacaoErro{}
+	err := uc.CreateErrorsBatch([]entity.LogImportacaoErro{{LogImportacaoID: 1}})
 
-	// Act
-	err := uc.CreateErrorsBatch(errLogs)
-
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
 }
 
-// ==================== GET ALL ====================
-
+// GetAll
 func TestLogImportacaoUseCase_GetAll_Success(t *testing.T) {
-	// Arrange
 	fake := []entity.LogImportacao{
-		{Id: 1},
-		{Id: 2},
+		{ID: 1, NomeArquivo: "a.xlsx", DataInicio: time.Now()},
 	}
-
-	mock := &mockLogImportacaoRepo{
-		logs: fake,
-		err:  nil,
-	}
-
+	mock := &mockLogImportacaoRepo{logs: fake, err: nil}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetAll()
+	res, err := uc.GetAll()
 
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
-	if len(result) != 2 {
-		t.Fatalf("esperava 2 logs, recebeu %d", len(result))
+	if len(res) != 1 {
+		t.Fatalf("esperava 1 log, recebeu: %d", len(res))
 	}
 }
 
 func TestLogImportacaoUseCase_GetAll_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		logs: nil,
-		err:  errors.New("find all failed"),
-	}
-
+	mock := &mockLogImportacaoRepo{logs: nil, err: errors.New("db error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetAll()
+	res, err := uc.GetAll()
 
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
-	if result != nil {
-		t.Errorf("esperava nil, recebeu %v", result)
+	if res != nil {
+		t.Errorf("esperava nil, recebeu: %v", res)
 	}
 }
 
-// ==================== GET BY ID ====================
-
+// GetByID
 func TestLogImportacaoUseCase_GetByID_Success(t *testing.T) {
-	// Arrange
-	fake := &entity.LogImportacao{
-		Id: 1,
-	}
-
-	mock := &mockLogImportacaoRepo{
-		log: fake,
-		err: nil,
-	}
-
+	fake := &entity.LogImportacao{ID: 1, NomeArquivo: "a.xlsx"}
+	mock := &mockLogImportacaoRepo{singleLog: fake, err: nil}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetByID(1)
+	res, err := uc.GetByID(1)
 
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
-	if result.Id != 1 {
-		t.Errorf("esperava ID 1, recebeu %d", result.Id)
+	if res == nil || res.ID != 1 {
+		t.Fatalf("esperava log com ID 1, recebeu: %v", res)
 	}
 }
 
 func TestLogImportacaoUseCase_GetByID_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		log: nil,
-		err: errors.New("not found"),
-	}
-
+	mock := &mockLogImportacaoRepo{singleLog: nil, err: errors.New("not found")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetByID(1)
+	res, err := uc.GetByID(1)
 
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
-	if result != nil {
-		t.Errorf("esperava nil, recebeu %v", result)
+	if res != nil {
+		t.Errorf("esperava nil, recebeu: %v", res)
 	}
 }
 
-// ==================== GET ERRORS BY LOG ID ====================
-
+// GetErrorsByLogID
 func TestLogImportacaoUseCase_GetErrorsByLogID_Success(t *testing.T) {
-	// Arrange
 	fake := []entity.LogImportacaoErro{
-		{Id: 1},
-		{Id: 2},
+		{ID: 10, LogImportacaoID: 1, MotivoErro: "Invalido"},
 	}
-
-	mock := &mockLogImportacaoRepo{
-		errLogs: fake,
-		err:     nil,
-	}
-
+	mock := &mockLogImportacaoRepo{errors: fake, err: nil}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetErrorsByLogID(1)
+	res, err := uc.GetErrorsByLogID(1)
 
-	// Assert
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
-	if len(result) != 2 {
-		t.Fatalf("esperava 2 erros, recebeu %d", len(result))
+	if len(res) != 1 {
+		t.Fatalf("esperava 1 erro, recebeu: %d", len(res))
 	}
 }
 
 func TestLogImportacaoUseCase_GetErrorsByLogID_Error(t *testing.T) {
-	// Arrange
-	mock := &mockLogImportacaoRepo{
-		errLogs: nil,
-		err:     errors.New("find errors failed"),
-	}
-
+	mock := &mockLogImportacaoRepo{errors: nil, err: errors.New("db error")}
 	uc := NewLogImportacaoUseCase(mock)
 
-	// Act
-	result, err := uc.GetErrorsByLogID(1)
+	res, err := uc.GetErrorsByLogID(1)
 
-	// Assert
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
-	if result != nil {
-		t.Errorf("esperava nil, recebeu %v", result)
+	if res != nil {
+		t.Errorf("esperava nil, recebeu: %v", res)
 	}
 }

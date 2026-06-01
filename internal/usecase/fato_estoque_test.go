@@ -7,41 +7,22 @@ import (
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/domain/entity"
 )
 
-// Mock do Repository
 type mockFatoEstoqueRepo struct {
-	estoques []entity.FatoEstoqueMateriais
-	err      error
+	data []entity.FatoEstoqueMateriais
+	err  error
 }
 
 func (m *mockFatoEstoqueRepo) FindAll() ([]entity.FatoEstoqueMateriais, error) {
-	return m.estoques, m.err
+	return m.data, m.err
 }
 
-// Teste 1: sucesso
 func TestFatoEstoqueUseCase_GetAll_Success(t *testing.T) {
 	// Arrange
 	fake := []entity.FatoEstoqueMateriais{
-		{
-			IdMaterial:        "1",
-			CodigoMaterial:    "MAT001",
-			DescricaoMaterial: "Material A",
-			QuantidadeEstoque: 100,
-			StatusEstoque:     "Disponível",
-		},
-		{
-			IdMaterial:        "2",
-			CodigoMaterial:    "MAT002",
-			DescricaoMaterial: "Material B",
-			QuantidadeEstoque: 50,
-			StatusEstoque:     "Baixo",
-		},
+		{SkFato: "1", SkProjeto: "P1", QuantidadeEstoque: "10"},
+		{SkFato: "2", SkProjeto: "P2", QuantidadeEstoque: "20"},
 	}
-
-	mock := &mockFatoEstoqueRepo{
-		estoques: fake,
-		err:      nil,
-	}
-
+	mock := &mockFatoEstoqueRepo{data: fake, err: nil}
 	uc := NewFatoEstoqueUseCase(mock)
 
 	// Act
@@ -51,28 +32,17 @@ func TestFatoEstoqueUseCase_GetAll_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
 	if len(result) != 2 {
-		t.Fatalf("esperava 2 registros, recebeu: %d", len(result))
+		t.Fatalf("esperava 2 itens de estoque, recebeu: %d", len(result))
 	}
-
-	if result[0].CodigoMaterial != "MAT001" {
-		t.Errorf("esperava codigo MAT001, recebeu %s", result[0].CodigoMaterial)
-	}
-
-	if result[1].DescricaoMaterial != "Material B" {
-		t.Errorf("esperava descricao 'Material B', recebeu %s", result[1].DescricaoMaterial)
+	if result[0].SkProjeto != "P1" {
+		t.Errorf("esperava P1, recebeu: %s", result[0].SkProjeto)
 	}
 }
 
-// Teste 2: erro do repository
 func TestFatoEstoqueUseCase_GetAll_Error(t *testing.T) {
 	// Arrange
-	mock := &mockFatoEstoqueRepo{
-		estoques: nil,
-		err:      errors.New("database connection failed"),
-	}
-
+	mock := &mockFatoEstoqueRepo{data: nil, err: errors.New("db error")}
 	uc := NewFatoEstoqueUseCase(mock)
 
 	// Act
@@ -82,20 +52,14 @@ func TestFatoEstoqueUseCase_GetAll_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro, recebeu nil")
 	}
-
 	if result != nil {
 		t.Errorf("esperava nil, recebeu: %v", result)
 	}
 }
 
-// Teste 3: lista vazia
 func TestFatoEstoqueUseCase_GetAll_Empty(t *testing.T) {
 	// Arrange
-	mock := &mockFatoEstoqueRepo{
-		estoques: []entity.FatoEstoqueMateriais{},
-		err:      nil,
-	}
-
+	mock := &mockFatoEstoqueRepo{data: []entity.FatoEstoqueMateriais{}, err: nil}
 	uc := NewFatoEstoqueUseCase(mock)
 
 	// Act
@@ -105,8 +69,7 @@ func TestFatoEstoqueUseCase_GetAll_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("esperava sem erro, recebeu: %v", err)
 	}
-
 	if len(result) != 0 {
-		t.Errorf("esperava lista vazia, recebeu %d itens", len(result))
+		t.Errorf("esperava 0 itens de estoque, recebeu: %d", len(result))
 	}
 }

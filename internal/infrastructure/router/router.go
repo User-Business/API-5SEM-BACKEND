@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -88,6 +89,14 @@ func NewRouter(h Handlers) *chi.Mux {
 		r.Route("/purchases", func(r chi.Router) {
 			r.Get("/", h.Purchase.GetPurchases)
 			r.Get("/metrics", h.Purchase.GetMetrics)
+		})
+
+		r.Post("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+			// Simula o tempo médio de um hash de senha Bcrypt + busca no Banco de Dados
+			time.Sleep(80 * time.Millisecond)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"token":"simulated-jwt-token-under-load","status":"success"}`))
 		})
 	})
 
