@@ -7,7 +7,9 @@ import (
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/adapter/handler"
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/adapter/repository"
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/config"
+	"github.com/DenariusData/API-5SEM-BACKEND/internal/infrastructure/auth"
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/infrastructure/database"
+	appmw "github.com/DenariusData/API-5SEM-BACKEND/internal/infrastructure/middleware"
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/infrastructure/router"
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/usecase"
 )
@@ -36,6 +38,13 @@ func main() {
 	fatoExecucaoRepo := repository.NewPostgresFatoExecucaoRepository(db)
 	logImportacaoRepo := repository.NewPostgresLogImportacaoRepository(db)
 	purchaseRepo := repository.NewPostgresPurchaseRepository(db)
+	userRepo := repository.NewPostgresUserRepository(db)
+	tokenRepo := repository.NewPostgresTokenRepository(db)
+
+	// Auth
+	jwtSvc := auth.NewService(cfg.JWTSecret, cfg.JWTExpiry)
+	authUC := usecase.NewAuthUseCase(userRepo, tokenRepo, jwtSvc)
+	authMW := appmw.Auth(jwtSvc, tokenRepo)
 
 	// Use Cases
 	projetoUC := usecase.NewProjetoUseCase(projetoRepo)
@@ -53,21 +62,22 @@ func main() {
 
 	// Handlers
 	handlers := router.Handlers{
-		Projeto:      handler.NewProjetoHandler(projetoUC),
-		Fornecedor:   handler.NewFornecedorHandler(fornecedorUC),
-		Material:     handler.NewMaterialHandler(materialUC),
-		Responsavel:  handler.NewResponsavelHandler(responsavelUC),
-		Solicitacao:  handler.NewSolicitacaoHandler(solicitacaoUC),
-		Tarefa:       handler.NewTarefaHandler(tarefaUC),
-		Tempo:        handler.NewTempoHandler(tempoUC),
-		FatoCompras:  handler.NewFatoComprasHandler(fatoComprasUC),
-		FatoEstoque:  handler.NewFatoEstoqueHandler(fatoEstoqueUC),
-		FatoExecucao: handler.NewFatoExecucaoHandler(fatoExecucaoUC),
+		Projeto:       handler.NewProjetoHandler(projetoUC),
+		Fornecedor:    handler.NewFornecedorHandler(fornecedorUC),
+		Material:      handler.NewMaterialHandler(materialUC),
+		Responsavel:   handler.NewResponsavelHandler(responsavelUC),
+		Solicitacao:   handler.NewSolicitacaoHandler(solicitacaoUC),
+		Tarefa:        handler.NewTarefaHandler(tarefaUC),
+		Tempo:         handler.NewTempoHandler(tempoUC),
+		FatoCompras:   handler.NewFatoComprasHandler(fatoComprasUC),
+		FatoEstoque:   handler.NewFatoEstoqueHandler(fatoEstoqueUC),
+		FatoExecucao:  handler.NewFatoExecucaoHandler(fatoExecucaoUC),
 		LogImportacao: handler.NewLogImportacaoHandler(logImportacaoUC),
-		Purchase:     handler.NewPurchaseHandler(purchaseUC),
+		Purchase:      handler.NewPurchaseHandler(purchaseUC),
+		Auth:          handler.NewAuthHandler(authUC),
 	}
 
-	r := router.NewRouter(handlers)
+	r := router.NewRouter(handlers, authMW)
 
 	log.Printf("Server running on :%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
