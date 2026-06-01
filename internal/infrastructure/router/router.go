@@ -7,6 +7,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/DenariusData/API-5SEM-BACKEND/internal/adapter/handler"
+	"github.com/DenariusData/API-5SEM-BACKEND/internal/domain/entity"
+	appmw "github.com/DenariusData/API-5SEM-BACKEND/internal/infrastructure/middleware"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -26,19 +28,23 @@ func cors(next http.Handler) http.Handler {
 }
 
 type Handlers struct {
-	Projeto      *handler.ProjetoHandler
-	Fornecedor   *handler.FornecedorHandler
-	Material     *handler.MaterialHandler
-	Responsavel  *handler.ResponsavelHandler
-	Solicitacao  *handler.SolicitacaoHandler
-	Tarefa       *handler.TarefaHandler
-	Tempo        *handler.TempoHandler
-	FatoCompras  *handler.FatoComprasHandler
-	FatoEstoque  *handler.FatoEstoqueHandler
-	FatoExecucao *handler.FatoExecucaoHandler
+	Projeto       *handler.ProjetoHandler
+	Fornecedor    *handler.FornecedorHandler
+	Material      *handler.MaterialHandler
+	Responsavel   *handler.ResponsavelHandler
+	Solicitacao   *handler.SolicitacaoHandler
+	Tarefa        *handler.TarefaHandler
+	Tempo         *handler.TempoHandler
+	FatoCompras   *handler.FatoComprasHandler
+	FatoEstoque   *handler.FatoEstoqueHandler
+	FatoExecucao  *handler.FatoExecucaoHandler
+	LogImportacao *handler.LogImportacaoHandler
+	Purchase      *handler.PurchaseHandler
+	Auth          *handler.AuthHandler
 }
 
-func NewRouter(h Handlers) *chi.Mux {
+// NewRouter monta as rotas. authMW é o middleware de autenticação (valida JWT + denylist).
+func NewRouter(h Handlers, authMW func(http.Handler) http.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -46,29 +52,66 @@ func NewRouter(h Handlers) *chi.Mux {
 	r.Use(cors)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Route("/dim", func(r chi.Router) {
-			r.Get("/projetos", h.Projeto.GetAll)
-			r.Get("/fornecedores", h.Fornecedor.GetAll)
-			r.Get("/materiais", h.Material.GetAll)
-			r.Get("/responsaveis", h.Responsavel.GetAll)
-			r.Get("/solicitacoes", h.Solicitacao.GetAll)
-			r.Get("/tarefas", h.Tarefa.GetAll)
-			r.Get("/tempo", h.Tempo.GetAll)
-			r.Get("/tempo-gasto", h.Tempo.GetTempoGasto)
-		})
+		// Rota pública
+		r.Post("/auth/login", h.Auth.Login)
 
-		r.Route("/fato", func(r chi.Router) {
-			r.Get("/compras", h.FatoCompras.GetAll)
-			r.Get("/estoque-materiais", h.FatoEstoque.GetAll)
-			r.Get("/execucao-tarefas", h.FatoExecucao.GetAll)
-		})
+		// Rotas autenticadas
+		r.Group(func(r chi.Router) {
+			r.Use(authMW)
 
-		r.Route("/programa", func(r chi.Router) {
-			r.Get("/investimento", h.Projeto.GetInvestimentoByPrograma)
-		})
+			r.Post("/auth/logout", h.Auth.Logout)
 
-		r.Route("/projetos", func(r chi.Router) {
-			r.Get("/materiais", h.Projeto.GetMateriaisByProjeto)
+			// Somente admin: dados que alimentam os dashboards
+			r.Group(func(r chi.Router) {
+				r.Use(appmw.RequireRole(entity.RoleAdmin))
+
+				r.Route("/dim", func(r chi.Router) {
+					r.Get("/projetos", h.Projeto.GetAll)
+					r.Get("/fornecedores", h.Fornecedor.GetAll)
+					r.Get("/materiais", h.Material.GetAll)
+					r.Get("/responsaveis", h.Responsavel.GetAll)
+					r.Get("/solicitacoes", h.Solicitacao.GetAll)
+					r.Get("/tarefas", h.Tarefa.GetAll)
+					r.Get("/tempo", h.Tempo.GetAll)
+					r.Get("/tempo-gasto", h.Tempo.GetTempoGasto)
+				})
+
+				r.Route("/fato", func(r chi.Router) {
+					r.Get("/compras", h.FatoCompras.GetAll)
+					r.Get("/estoque-materiais", h.FatoEstoque.GetAll)
+					r.Get("/execucao-tarefas", h.FatoExecucao.GetAll)
+				})
+
+				r.Route("/programa", func(r chi.Router) {
+					r.Get("/investimento", h.Projeto.GetInvestimentoByPrograma)
+				})
+
+				r.Route("/projetos", func(r chi.Router) {
+					r.Get("/materiais", h.Projeto.GetMateriaisByProjeto)
+				})
+
+				r.Route("/import-logs", func(r chi.Router) {
+					r.Post("/", h.LogImportacao.Create)
+					r.Get("/", h.LogImportacao.GetAll)
+					r.Route("/{id}", func(r chi.Router) {
+						r.Get("/", h.LogImportacao.GetByID)
+						r.Put("/", h.LogImportacao.Update)
+						r.Get("/errors", h.LogImportacao.GetErrors)
+						r.Post("/errors", h.LogImportacao.CreateError)
+						r.Post("/errors/batch", h.LogImportacao.CreateErrorsBatch)
+					})
+				})
+			})
+
+			// admin + compras: pedidos de compra
+			r.Group(func(r chi.Router) {
+				r.Use(appmw.RequireRole(entity.RoleAdmin, entity.RoleCompras))
+
+				r.Route("/purchases", func(r chi.Router) {
+					r.Get("/", h.Purchase.GetPurchases)
+					r.Get("/metrics", h.Purchase.GetMetrics)
+				})
+			})
 		})
 	})
 
