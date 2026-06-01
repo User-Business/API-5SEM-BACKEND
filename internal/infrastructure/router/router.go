@@ -1,13 +1,14 @@
 package router
 
 import (
-	"net/http"
-	"time"
+    "net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+    "github.com/go-chi/chi/v5"
+    chimiddleware "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/DenariusData/API-5SEM-BACKEND/internal/adapter/handler"
+    authmiddleware "github.com/DenariusData/API-5SEM-BACKEND/internal/middleware"
+
+    "github.com/DenariusData/API-5SEM-BACKEND/internal/adapter/handler"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -39,26 +40,30 @@ type Handlers struct {
 	FatoExecucao *handler.FatoExecucaoHandler
 	LogImportacao *handler.LogImportacaoHandler
 	Purchase     *handler.PurchaseHandler
+	Auth         *handler.AuthHandler
 }
 
 func NewRouter(h Handlers) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chimiddleware.Logger)
+    r.Use(chimiddleware.Recoverer)
 	r.Use(cors)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/dim", func(r chi.Router) {
-			r.Get("/projetos", h.Projeto.GetAll)
-			r.Get("/fornecedores", h.Fornecedor.GetAll)
-			r.Get("/materiais", h.Material.GetAll)
-			r.Get("/responsaveis", h.Responsavel.GetAll)
-			r.Get("/solicitacoes", h.Solicitacao.GetAll)
-			r.Get("/tarefas", h.Tarefa.GetAll)
-			r.Get("/tempo", h.Tempo.GetAll)
-			r.Get("/tempo-gasto", h.Tempo.GetTempoGasto)
-		})
+
+        	r.Use(authmiddleware.JWTAuth)
+
+        	r.Get("/projetos", h.Projeto.GetAll)
+        	r.Get("/fornecedores", h.Fornecedor.GetAll)
+        	r.Get("/materiais", h.Material.GetAll)
+        	r.Get("/responsaveis", h.Responsavel.GetAll)
+        	r.Get("/solicitacoes", h.Solicitacao.GetAll)
+        	r.Get("/tarefas", h.Tarefa.GetAll)
+        	r.Get("/tempo", h.Tempo.GetAll)
+        	r.Get("/tempo-gasto", h.Tempo.GetTempoGasto)
+        })
 
 		r.Route("/fato", func(r chi.Router) {
 			r.Get("/compras", h.FatoCompras.GetAll)
@@ -91,13 +96,7 @@ func NewRouter(h Handlers) *chi.Mux {
 			r.Get("/metrics", h.Purchase.GetMetrics)
 		})
 
-		r.Post("/auth/login", func(w http.ResponseWriter, r *http.Request) {
-			// Simula o tempo médio de um hash de senha Bcrypt + busca no Banco de Dados
-			time.Sleep(80 * time.Millisecond)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"token":"simulated-jwt-token-under-load","status":"success"}`))
-		})
+		r.Post("/auth/login", h.Auth.Login)
 	})
 
 	return r

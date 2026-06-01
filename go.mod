@@ -4,6 +4,8 @@ go 1.25.0
 
 require github.com/jackc/pgx/v5 v5.9.1
 
+require github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+
 require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/jackc/pgpassfile v1.0.0 // indirect

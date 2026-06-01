@@ -65,6 +65,7 @@ func main() {
 		FatoExecucao: handler.NewFatoExecucaoHandler(fatoExecucaoUC),
 		LogImportacao: handler.NewLogImportacaoHandler(logImportacaoUC),
 		Purchase:     handler.NewPurchaseHandler(purchaseUC),
+		Auth: handler.NewAuthHandler(),
 	}
 
 	r := router.NewRouter(handlers)
