@@ -15,6 +15,39 @@ env:
 
 jobs:
 
+  # Garante que toda mensagem de commit do PR siga o padrão "Renato Adorno"
+  # (<tipo>: descrição em inglês). Só roda em pull_request.
+  commit-lint:
+    name: Commit Lint (padrão de commits)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Validar mensagens de commit
+        run: |
+          pattern='^(feat|fix|docs|style|refactor|build|test|chore): .+'
+          fail=0
+          for sha in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}); do
+            msg=$(git log -1 --format=%s "$sha")
+            if echo "$msg" | grep -qE "$pattern"; then
+              echo "OK   : $msg"
+            else
+              echo "::error::Commit fora do padrão: '$msg'"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "----"
+            echo "Formato esperado: <tipo>: descrição em inglês (imperativo)"
+            echo "Tipos válidos: feat, fix, docs, style, refactor, build, test, chore"
+            echo "Exemplo: feat: add integration tests for dashboard endpoints"
+            exit 1
+          fi
+
   lint:
     name: Lint (Go Vet)
     runs-on: ubuntu-latest
