@@ -48,6 +48,34 @@ jobs:
             exit 1
           fi
 
+  # Garante que a branch do PR siga o padrão vindo do Jira: SCRUM-<numero>-<descricao>.
+  # Ao clicar em "Criar branch" numa tarefa do Jira, o nome já vem nesse formato.
+  branch-name:
+    name: Branch Name Check (padrão Jira)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Validar nome da branch
+        run: |
+          branch="${{ github.head_ref }}"
+          echo "Branch do PR: $branch"
+          # Branches isentas: integração/release e a branch inicial de setup de testes.
+          case "$branch" in
+            main|develop|Sprint-1|Sprint-2|Sprint-3|release/*|hotfix/*|testes-integracao)
+              echo "Branch isenta da validação de nome."
+              exit 0
+              ;;
+          esac
+          if echo "$branch" | grep -qE '^SCRUM-[0-9]+-.+'; then
+            echo "OK: nome no padrão Jira (SCRUM-<numero>-<descricao>)."
+          else
+            echo "::error::Branch '$branch' fora do padrão."
+            echo "Use: SCRUM-<numero>-<descricao>  (ex.: SCRUM-12-add-login-endpoint)"
+            echo "Dica: no Jira, abra a tarefa e clique em 'Criar branch' para gerar o nome certo."
+            exit 1
+          fi
+
   lint:
     name: Lint (Go Vet)
     runs-on: ubuntu-latest
